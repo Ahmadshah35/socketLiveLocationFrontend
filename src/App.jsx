@@ -143,14 +143,14 @@
 //   );
 // }
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 
-// 🌐 Dynamic backend URL
+// 🌍 Detect environment
 const SERVER_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:3001" // Local backend
-    : "https://predemo.site/Gardening"; // Live backend
+    : "https://predemo.site/Gardening"; // Production backend
 
 let socket;
 
@@ -165,15 +165,15 @@ export default function App() {
     setLogs((prev) => [`${new Date().toLocaleTimeString()} - ${msg}`, ...prev]);
 
   const connectSocket = () => {
-    if (socket) return log("⚠️ Already connected");
+    if (socket && socket.connected) {
+      log("⚠️ Already connected");
+      return;
+    }
 
     socket = io(SERVER_URL, {
-      transports: ["websocket"], // 🚀 Force websocket only
-      reconnection: true,        // Auto reconnect
-      reconnectionAttempts: 10,  // Retry 10 times
-      reconnectionDelay: 2000,   // 2s delay between retries
-      secure: SERVER_URL.startsWith("https"), // Required for HTTPS backend
-      withCredentials: true,     // For secure cookies (future proof)
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+      secure: SERVER_URL.startsWith("https"),
     });
 
     socket.on("connect", () => {
@@ -207,6 +207,14 @@ export default function App() {
     });
   };
 
+  const disconnectSocket = () => {
+    if (socket) {
+      socket.disconnect();
+      log("🔌 Manually disconnected");
+      setConnected(false);
+    }
+  };
+
   const sendLocationUpdate = () => {
     if (!proId || !latitude || !longitude) {
       return alert("Enter Pro ID, latitude, and longitude!");
@@ -226,6 +234,15 @@ export default function App() {
     log("🔍 Requested Pro location");
   };
 
+  useEffect(() => {
+    return () => {
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+      }
+    };
+  }, []);
+
   return (
     <div className="p-4 max-w-md mx-auto space-y-4 text-gray-800">
       <h1 className="text-2xl font-bold text-center">📡 Pro Location Manager</h1>
@@ -238,12 +255,19 @@ export default function App() {
           value={proId}
           onChange={(e) => setProId(e.target.value)}
         />
-        {!connected && (
+        {!connected ? (
           <button
             onClick={connectSocket}
             className="w-full bg-blue-600 text-white px-4 py-2 rounded"
           >
             Connect
+          </button>
+        ) : (
+          <button
+            onClick={disconnectSocket}
+            className="w-full bg-red-600 text-white px-4 py-2 rounded"
+          >
+            Disconnect
           </button>
         )}
       </div>
@@ -297,4 +321,3 @@ export default function App() {
     </div>
   );
 }
-
