@@ -147,10 +147,9 @@ import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 
 // 🌍 Detect environment
-const SERVER_URL =
-  window.location.hostname === "localhost"
-    ? "http://localhost:3001" // Local backend
-    : "https://predemo.site/Gardening"; // Production backend
+const SERVER_URL = window.location.hostname === "localhost"
+  ? "http://localhost:3001"
+  : "wss://predemo.site/Gardening"; // force secure websocket
 
 let socket;
 
