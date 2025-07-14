@@ -146,15 +146,15 @@
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 
-// 🌍 Detect environment
+// ✅ Auto-detect backend based on environment
 const SERVER_URL = window.location.hostname === "localhost"
-  ? "http://localhost:3001"
-  : "wss://predemo.site/Gardening"; // force secure websocket
+  ? "http://localhost:3001" // Local backend for dev
+  : "https://predemo.site/Gardening"; // Live backend for production
 
 let socket;
 
 export default function App() {
-  const [proId, setProId] = useState("");
+  const [proId, setProId] = useState(""); // Pro _id
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [logs, setLogs] = useState([]);
@@ -165,7 +165,7 @@ export default function App() {
 
   const connectSocket = () => {
     if (socket && socket.connected) {
-      log("⚠️ Already connected");
+      log("⚠️ Already connected. Skipping new connection.");
       return;
     }
 
@@ -181,7 +181,7 @@ export default function App() {
     });
 
     socket.on("disconnect", (reason) => {
-      log(`❌ Disconnected (${reason})`);
+      log(`❌ Disconnected: ${reason}`);
       setConnected(false);
     });
 
@@ -207,9 +207,9 @@ export default function App() {
   };
 
   const disconnectSocket = () => {
-    if (socket) {
+    if (socket && socket.connected) {
       socket.disconnect();
-      log("🔌 Manually disconnected");
+      log("🔌 Socket disconnected manually");
       setConnected(false);
     }
   };
@@ -233,11 +233,13 @@ export default function App() {
     log("🔍 Requested Pro location");
   };
 
+  // 🔥 Clean up on component unmount
   useEffect(() => {
     return () => {
       if (socket) {
+        socket.removeAllListeners();
         socket.disconnect();
-        socket = null;
+        log("♻️ Cleaned up socket on unmount");
       }
     };
   }, []);
